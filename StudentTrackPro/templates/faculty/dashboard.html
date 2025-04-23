@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Dashboard - Attendance Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-tie me-2"></i>Welcome, {{ faculty.full_name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Faculty ID:</strong> {{ faculty.faculty_id }}</p>
+                        <p><strong>Department:</strong> {{ faculty.department }}</p>
+                        <p><strong>Position:</strong> {{ faculty.position }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Email:</strong> {{ current_user.email }}</p>
+                        <p><strong>Phone:</strong> {{ faculty.phone }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Today's Sessions</h5>
+            </div>
+            <div class="card-body">
+                {% if today_sessions %}
+                    <div class="list-group">
+                        {% for session in today_sessions %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">{{ session.course.title }}</h6>
+                                    <small>{{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }}</small>
+                                </div>
+                                <p class="mb-1">{{ session.title or 'Regular class' }}</p>
+                                <small>Location: {{ session.course.location }}</small>
+                                <div class="mt-2">
+                                    <a href="{{ url_for('take_attendance', session_id=session.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-clipboard-check me-1"></i> Take Attendance
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No sessions scheduled for today.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Actions Needed</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <!-- New button for notifying absence -->
+                    <a href="{{ url_for('notify_absence') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-bell me-2"></i>
+                            Notify Students of Absence
+                        </div>
+                    </a>
+                    
+                    {% if pending_requests > 0 %}
+                        <a href="{{ url_for('faculty_absence_requests') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-calendar-times me-2"></i>
+                                Pending absence requests
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ pending_requests }}</span>
+                        </a>
+                    {% endif %}
+                    
+                    {% for course in courses %}
+                        {% if course_stats[course.id]['below_threshold'] > 0 %}
+                            <a href="{{ url_for('attendance_reports') }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                                        {{ course_stats[course.id]['below_threshold'] }} students below attendance threshold in {{ course.title }}
+                                    </div>
+                                    <span class="badge bg-warning rounded-pill">{{ course_stats[course.id]['below_threshold'] }}</span>
+                                </div>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if no_actions_needed %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i> No pending actions needed.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Your Courses</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <div class="row">
+                        {% for course in courses %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">{{ course.title }}</h5>
+                                        <small class="text-muted">{{ course.course_code }}</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Schedule:</strong> {{ course.schedule }}</p>
+                                        <p><strong>Location:</strong> {{ course.location }}</p>
+                                        <p><strong>Attendance Rate:</strong> {{ course_stats[course.id]['attendance_rate'] }}%</p>
+                                        <p><strong>Students:</strong> {{ course_stats[course.id]['student_count'] }}</p>
+                                        <p><strong>Sessions:</strong> {{ course_stats[course.id]['sessions_count'] }}</p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="btn-group w-100">
+                                            <a href="{{ url_for('course_sessions', course_id=course.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-calendar-alt me-1"></i> Sessions
+                                            </a>
+                                            <a href="{{ url_for('student_management', course_id=course.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-users me-1"></i> Students
+                                            </a>
+                                            <a href="{{ url_for('edit_course', course_id=course.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit me-1"></i> Edit
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You haven't created any courses yet.
+                    </div>
+                    <a href="{{ url_for('course_management') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create Course
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>College Calendar</h5>
+            </div>
+            <div class="card-body">
+                <button id="calendarButton" class="btn btn-primary mb-3">College Calendar</button>
+                <div id="calendarSection" style="display:none;">
+                    <h6>College Calendar 2024-2025</h6>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Event/Holiday</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>29.07.2024</td><td>Mon</td><td>Reopening for Senior Students</td></tr>
+                            <tr><td>29.07.2024</td><td>Mon</td><td>First Year M.E./M.Tech. Orientation</td></tr>
+                            <tr><td>15.08.2024</td><td>Thu</td><td>INDEPENDENCE DAY (H1)</td></tr>
+                            <tr><td>07.09.2024</td><td>Sat</td><td>GANESH CHATURTHI</td></tr>
+                            <tr><td>02.10.2024</td><td>Wed</td><td>GANDHI JAYANTHI (H2)</td></tr>
+                            <tr><td>11.10.2024</td><td>Fri</td><td>AYUTHA POOJA (H3)</td></tr>
+                            <tr><td>12.10.2024</td><td>Sat</td><td>Additional Holiday on Account of Vijayadashami</td></tr>
+                            <tr><td>19.10.2024</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>31.10.2024</td><td>Thu</td><td>DEEPAVALI (H4)</td></tr>
+                            <tr><td>01.11.2024</td><td>Fri</td><td>Additional Holiday on Account of Deepavali</td></tr>
+                            <tr><td>16.11.2024</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>25.12.2024</td><td>Wed</td><td>CHRISTMAS (H5)</td></tr>
+                            <tr><td>01.01.2025</td><td>Wed</td><td>NEW YEAR (H6)</td></tr>
+                            <tr><td>13.01.2025</td><td>Mon</td><td>Additional Holiday on Account of Pongal</td></tr>
+                            <tr><td>14.01.2025</td><td>Tue</td><td>PONGAL (H7)</td></tr>
+                            <tr><td>18.01.2025</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>26.01.2025</td><td>Sun</td><td>REPUBLIC DAY</td></tr>
+                            <tr><td>31.03.2025</td><td>Mon</td><td>RAMZAN (H8)</td></tr>
+                            <tr><td>14.04.2025</td><td>Mon</td><td>TAMIL NEW YEAR (H9)</td></tr>
+                            <tr><td>16.04.2025</td><td>Wed</td><td>College Day</td></tr>
+                            <tr><td>01.05.2025</td><td>Thu</td><td>MAY DAY (H10)</td></tr>
+                            <tr><td>07.06.2025</td><td>Sat</td><td>BAKRID</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calendar toggle functionality
+        document.getElementById('calendarButton').addEventListener('click', function() {
+            const calendarSection = document.getElementById('calendarSection');
+            if (calendarSection.style.display === 'none') {
+                calendarSection.style.display = 'block';
+            } else {
+                calendarSection.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

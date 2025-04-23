@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Notify Absence</h1>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.course_id.label }} {{ form.course_id(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.date.label }} {{ form.date(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.period.label }} {{ form.period(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.message.label }} {{ form.message(class="form-control", rows=5) }}
+    </div>
+    <button type="submit" class="btn btn-primary">Notify</button>
+</form>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if edit_mode %}
+        Edit Course - Attendance Management System
+    {% elif sessions_view %}
+        Course Sessions - {{ course.title }} - Attendance Management System
+    {% else %}
+        Course Management - Attendance Management System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    {% if edit_mode %}
+                        <i class="fas fa-edit me-2"></i>Edit Course
+                    {% elif sessions_view %}
+                        <i class="fas fa-calendar-alt me-2"></i>{{ course.title }} - Sessions
+                    {% else %}
+                        <i class="fas fa-book me-2"></i>Course Management
+                    {% endif %}
+                </h4>
+                
+                {% if edit_mode or sessions_view %}
+                    <a href="{{ url_for('course_management') }}" class="btn btn-sm btn-light">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Courses
+                    </a>
+                {% endif %}
+            </div>
+            
+            <div class="card-body">
+                {% if sessions_view %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>{{ course.title }} ({{ course.course_code }})</h5>
+                            <p><strong>Schedule:</strong> {{ course.schedule }}</p>
+                            <p><strong>Location:</strong> {{ course.location }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSessionModal">
+                                <i class="fas fa-plus me-1"></i> Add New Session
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% if sessions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in sessions %}
+                                        <tr>
+                                            <td>{{ session.session_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }}</td>
+                                            <td>{{ session.title or 'Regular class' }}</td>
+                                            <td>
+                                                {% if session.session_date > today %}
+                                                    <span class="badge bg-info">Upcoming</span>
+                                                {% elif session.session_date == today %}
+                                                    <span class="badge bg-warning">Today</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Past</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if session.attendance_taken %}
+                                                    <span class="badge badge-present me-2"><i class="fas fa-check"></i> Completed</span>
+                                                {% else %}
+                                                    <a href="{{ url_for('take_attendance', session_id=session.id) }}" 
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-clipboard-check me-1"></i> Attendance
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> No sessions have been created for this course yet.
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Add Session Modal -->
+                    <div class="modal fade" id="addSessionModal" tabindex="-1" aria-labelledby="addSessionModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="addSessionModalLabel">Add New Session</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('course_sessions', course_id=course.id) }}">
+                                        {{ form.hidden_tag() }}
+                                        
+                                        <div class="mb-3">
+                                            <label for="session_date" class="form-label">{{ form.session_date.label }}</label>
+                                            {{ form.session_date(class="form-control", id="session_date", type="date") }}
+                                            {% for error in form.session_date.errors %}
+                                                <div class="text-danger">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="start_time" class="form-label">{{ form.start_time.label }}</label>
+                                            {{ form.start_time(class="form-control", id="start_time", type="time") }}
+                                            {% for error in form.start_time.errors %}
+                                                <div class="text-danger">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="end_time" class="form-label">{{ form.end_time.label }}</label>
+                                            {{ form.end_time(class="form-control", id="end_time", type="time") }}
+                                            {% for error in form.end_time.errors %}
+                                                <div class="text-danger">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="title" class="form-label">{{ form.title.label }} (Optional)</label>
+                                            {{ form.title(class="form-control", id="title") }}
+                                            {% for error in form.title.errors %}
+                                                <div class="text-danger">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="notes" class="form-label">{{ form.notes.label }} (Optional)</label>
+                                            {{ form.notes(class="form-control", id="notes", rows="3") }}
+                                            {% for error in form.notes.errors %}
+                                                <div class="text-danger">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            {{ form.submit(class="btn btn-primary") }}
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Rest of the template unchanged -->
+                    <form method="POST" action="{{ url_for('edit_course', course_id=course.id) if edit_mode else url_for('course_management') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="course_code" class="form-label">{{ form.course_code.label }}</label>
+                                    {{ form.course_code(class="form-control", id="course_code") }}
+                                    {% for error in form.course_code.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">{{ form.title.label }}</label>
+                                    {{ form.title(class="form-control", id="title") }}
+                                    {% for error in form.title.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="schedule" class="form-label">{{ form.schedule.label }}</label>
+                                    {{ form.schedule(class="form-control", id="schedule", placeholder="e.g. Mon, Wed, Fri 10:00 AM - 11:00 AM") }}
+                                    {% for error in form.schedule.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">{{ form.location.label }}</label>
+                                    {{ form.location(class="form-control", id="location", placeholder="e.g. Room 101, Building A") }}
+                                    {% for error in form.location.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">{{ form.description.label }} (Optional)</label>
+                            {{ form.description(class="form-control", id="description", rows="3") }}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="min_attendance_percent" class="form-label">{{ form.min_attendance_percent.label }}</label>
+                            {{ form.min_attendance_percent(class="form-control", id="min_attendance_percent", type="number", step="0.1") }}
+                            <small class="text-muted">Minimum percentage required for course completion</small>
+                            {% for error in form.min_attendance_percent.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if edit_mode %}
+                                <button type="button" class="btn btn-danger me-md-2" data-bs-toggle="modal" data-bs-target="#deleteCourseModal">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete Course
+                                </button>
+                            {% endif %}
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                    
+                    {% if edit_mode %}
+                        <!-- Delete Course Modal -->
+                        <div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-labelledby="deleteCourseModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteCourseModalLabel">Confirm Deletion</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure you want to delete the course "{{ course.title }}"?</p>
+                                        <p class="text-danger">This action cannot be undone and will delete all associated sessions, attendance records, and enrollment data.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger">Delete Course</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if not sessions_view and not edit_mode %}
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Your Courses</h5>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Title</th>
+                                        <th>Schedule</th>
+                                        <th>Location</th>
+                                        <th>Min. Attendance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                        <tr>
+                                            <td>{{ course.course_code }}</td>
+                                            <td>{{ course.title }}</td>
+                                            <td>{{ course.schedule }}</td>
+                                            <td>{{ course.location }}</td>
+                                            <td>{{ course.min_attendance_percent }}%</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('edit_course', course_id=course.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('course_sessions', course_id=course.id) }}" 
+                                                       class="btn btn-sm btn-outline-info">
+                                                        <i class="fas fa-calendar-alt"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('student_management', course_id=course.id) }}" 
+                                                       class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-users"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> You haven't created any courses yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

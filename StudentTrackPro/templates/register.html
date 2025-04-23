@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if edit_mode %}
+        Update Profile - Attendance Management System
+    {% elif 'Student Profile' in title %}
+        Complete Student Profile - Attendance Management System
+    {% elif 'Faculty Profile' in title %}
+        Complete Faculty Profile - Attendance Management System
+    {% else %}
+        Register - Attendance Management System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    {% if edit_mode %}
+                        <i class="fas fa-user-edit me-2"></i>Update Profile
+                    {% elif 'Student Profile' in title %}
+                        <i class="fas fa-user-graduate me-2"></i>Complete Student Profile
+                    {% elif 'Faculty Profile' in title %}
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Complete Faculty Profile
+                    {% else %}
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    {% if form.username is defined %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">{{ form.username.label }}</label>
+                        {{ form.username(class="form-control", id="username") }}
+                        {% for error in form.username.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.email is defined %}
+                    <div class="mb-3">
+                        <label for="email" class="form-label">{{ form.email.label }}</label>
+                        {{ form.email(class="form-control", id="email") }}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.password is defined %}
+                    <div class="mb-3">
+                        <label for="password" class="form-label">{{ form.password.label }}</label>
+                        {{ form.password(class="form-control", id="password") }}
+                        {% for error in form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.password2 is defined %}
+                    <div class="mb-3">
+                        <label for="password2" class="form-label">{{ form.password2.label }}</label>
+                        {{ form.password2(class="form-control", id="password2") }}
+                        {% for error in form.password2.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.user_type is defined %}
+                    <div class="mb-3">
+                        <label for="user_type" class="form-label">{{ form.user_type.label }}</label>
+                        {{ form.user_type(class="form-select", id="user_type") }}
+                        {% for error in form.user_type.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.student_id is defined %}
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">{{ form.student_id.label }}</label>
+                        {{ form.student_id(class="form-control", id="student_id") }}
+                        {% for error in form.student_id.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.faculty_id is defined %}
+                    <div class="mb-3">
+                        <label for="faculty_id" class="form-label">{{ form.faculty_id.label }}</label>
+                        {{ form.faculty_id(class="form-control", id="faculty_id") }}
+                        {% for error in form.faculty_id.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.full_name is defined %}
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">{{ form.full_name.label }}</label>
+                        {{ form.full_name(class="form-control", id="full_name") }}
+                        {% for error in form.full_name.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.department is defined %}
+                    <div class="mb-3">
+                        <label for="department" class="form-label">{{ form.department.label }}</label>
+                        {{ form.department(class="form-control", id="department") }}
+                        {% for error in form.department.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.year_of_study is defined %}
+                    <div class="mb-3">
+                        <label for="year_of_study" class="form-label">{{ form.year_of_study.label }}</label>
+                        {{ form.year_of_study(class="form-control", id="year_of_study") }}
+                        {% for error in form.year_of_study.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.position is defined %}
+                    <div class="mb-3">
+                        <label for="position" class="form-label">{{ form.position.label }}</label>
+                        {{ form.position(class="form-control", id="position") }}
+                        {% for error in form.position.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.phone is defined %}
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">{{ form.phone.label }}</label>
+                        {{ form.phone(class="form-control", id="phone") }}
+                        {% for error in form.phone.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+            {% if not edit_mode and 'Profile' not in title %}
+            <div class="card-footer text-center">
+                <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

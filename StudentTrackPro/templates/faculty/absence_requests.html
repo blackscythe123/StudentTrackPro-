@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ super() }} - {% if responding %}Review Absence Request{% else %}Absence Requests{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">
+            {% if responding %}
+                <i class="fas fa-clipboard-check me-2"></i>Review Absence Request
+            {% else %}
+                <i class="fas fa-calendar-times me-2"></i>Absence Requests
+            {% endif %}
+        </h4>
+        
+        {% if responding %}
+            <a href="{{ url_for('faculty_absence_requests') }}" class="btn btn-sm btn-light">
+                <i class="fas fa-arrow-left me-1"></i> Back to Requests
+            </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if responding %}
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Request Details</h5>
+                    <p><strong>Student:</strong> {{ student.full_name }} ({{ student.student_id }})</p>
+                    <p><strong>Course:</strong> {{ course.title }} ({{ course.course_code }})</p>
+                    <p><strong>Request Date:</strong> {{ request.request_date.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>Absence Period:</strong> {{ request.from_date.strftime('%Y-%m-%d') }} to {{ request.to_date.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>Reason:</strong> {{ request.reason }}</p>
+                    {% if request.documentation %}
+                        <p><strong>Attachment:</strong> <a href="{{ url_for('download_attachment', request_id=request.id) }}" target="_blank">Download File</a></p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <form method="POST" action="{{ url_for('respond_absence_request', request_id=request.id) }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="status" class="form-label">{{ form.status.label }}</label>
+                    {{ form.status(class="form-select", id="status") }}
+                    {% for error in form.status.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="response_notes" class="form-label">{{ form.response_notes.label }}</label>
+                    {{ form.response_notes(class="form-control", id="response_notes", rows="3") }}
+                    {% for error in form.response_notes.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        {% else %}
+            {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Request Date</th>
+                                <th>Absence Period</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                                <tr class="{% if request.status == 'pending' %}table-warning{% elif request.status == 'approved' %}table-success{% elif request.status == 'rejected' %}table-danger{% endif %}">
+                                    <td>{{ request.id }}</td>
+                                    <td>{{ request.student.full_name }}</td>
+                                    <td>{{ request.course.title }}</td>
+                                    <td>{{ request.request_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ request.from_date.strftime('%Y-%m-%d') }} to {{ request.to_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if request.status == 'pending' %}bg-warning
+                                            {% elif request.status == 'approved' %}bg-success
+                                            {% elif request.status == 'rejected' %}bg-danger
+                                            {% endif %}">
+                                            {{ request.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" 
+                                                    data-bs-target="#viewRequestModal{{ request.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            
+                                            {% if request.status == 'pending' %}
+                                                <a href="{{ url_for('respond_absence_request', request_id=request.id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-reply"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- View Request Modal -->
+                                        <div class="modal fade" id="viewRequestModal{{ request.id }}" tabindex="-1" 
+                                             aria-labelledby="viewRequestModalLabel{{ request.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="viewRequestModalLabel{{ request.id }}">
+                                                            Absence Request Details
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p><strong>Student:</strong> {{ request.student.full_name }} ({{ request.student.student_id }})</p>
+                                                        <p><strong>Course:</strong> {{ request.course.title }} ({{ request.course.course_code }})</p>
+                                                        <p><strong>Request Date:</strong> {{ request.request_date.strftime('%Y-%m-%d') }}</p>
+                                                        <p><strong>Absence Period:</strong> {{ request.from_date.strftime('%Y-%m-%d') }} to {{ request.to_date.strftime('%Y-%m-%d') }}</p>
+                                                        <p><strong>Reason:</strong></p>
+                                                        <div class="alert alert-secondary">{{ request.reason }}</div>
+                                                        
+                                                        {% if request.documentation %}
+                                                            <p><strong>Attachment:</strong> <a href="{{ url_for('download_attachment', request_id=request.id) }}" target="_blank">Download File</a></p>
+                                                        {% endif %}
+                                                        
+                                                        {% if request.status != 'pending' %}
+                                                            <p><strong>Response:</strong></p>
+                                                            <div class="alert {% if request.status == 'approved' %}alert-success{% else %}alert-danger{% endif %}">
+                                                                {% if request.response_notes %}
+                                                                    {{ request.response_notes }}
+                                                                {% else %}
+                                                                    No additional notes provided.
+                                                                {% endif %}
+                                                            </div>
+                                                            <p><small>Responded on {{ request.responded_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        {% if request.status == 'pending' %}
+                                                            <a href="{{ url_for('respond_absence_request', request_id=request.id) }}" 
+                                                               class="btn btn-primary">
+                                                                Respond to Request
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No absence requests found.
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

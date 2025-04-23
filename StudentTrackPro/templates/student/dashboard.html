@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - Attendance Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Welcome, {{ student.full_name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                        <p><strong>Department:</strong> {{ student.department }}</p>
+                        <p><strong>Year of Study:</strong> {{ student.year_of_study }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Email:</strong> {{ current_user.email }}</p>
+                        <p><strong>Phone:</strong> {{ student.phone or 'Not provided' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Section for Absence Notifications -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Teacher Absence Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% if absence_notifications %}
+                    {% for notification in absence_notifications %}
+                        <div class="alert alert-info mb-2">
+                            <strong>Notice:</strong> 
+                            {{ notification.faculty.full_name }} will not attend 
+                            {{ notification.course.title }} on {{ notification.date.strftime('%Y-%m-%d') }} 
+                            ({{ notification.period }}). 
+                            Please work on: <strong>{{ notification.message }}</strong>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No absence notifications at this time.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Your Courses</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <div class="row">
+                        {% for course in courses %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header {% if attendance_stats[course.id].percentage < course.min_attendance_percent %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">{{ course.title }}</h6>
+                                            <span class="badge bg-light text-dark">{{ attendance_stats[course.id].percentage }}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text small mb-1"><strong>Code:</strong> {{ course.course_code }}</p>
+                                        <p class="card-text small mb-1"><strong>Instructor:</strong> {{ course.instructor.full_name }}</p>
+                                        <p class="card-text small mb-1"><strong>Schedule:</strong> {{ course.schedule }}</p>
+                                        <p class="card-text small mb-1"><strong>Location:</strong> {{ course.location }}</p>
+                                        <p class="card-text small mb-1">
+                                            <strong>Required Attendance:</strong> {{ course.min_attendance_percent }}%
+                                        </p>
+                                        
+                                        <div class="progress mt-2" style="height: 15px;">
+                                            <div class="progress-bar 
+                                                {% if attendance_stats[course.id].percentage < 60 %}
+                                                    bg-danger
+                                                {% elif attendance_stats[course.id].percentage < course.min_attendance_percent %}
+                                                    bg-warning
+                                                {% else %}
+                                                    bg-success
+                                                {% endif %}"
+                                                role="progressbar" 
+                                                style="width: {{ attendance_stats[course.id].percentage }}%;" 
+                                                aria-valuenow="{{ attendance_stats[course.id].percentage }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ attendance_stats[course.id].percentage }}%
+                                            </div>
+                                        </div>
+                                        
+                                        {% if attendance_stats[course.id].percentage < course.min_attendance_percent %}
+                                            <div class="alert alert-warning mt-2 mb-0 p-2 small">
+                                                <i class="fas fa-exclamation-triangle me-1"></i> Your attendance is below the required threshold.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="{{ url_for('student_view_attendance', course_id=course.id) }}" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-eye me-1"></i> View Attendance Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You are not enrolled in any courses yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Important Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <a href="{{ url_for('create_absence_request') }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-calendar-plus me-1"></i> Request Absence
+                    </a>
+                </div>
+                
+                {% if pending_requests %}
+                    <div class="alert alert-info">
+                        <h6 class="mb-2"><i class="fas fa-clock me-1"></i> Pending Requests</h6>
+                        <ul class="list-group">
+                            {% for request in pending_requests %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small>{{ request.course.title }}</small><br>
+                                            <small class="text-muted">{{ request.from_date.strftime('%Y-%m-%d') }} to {{ request.to_date.strftime('%Y-%m-%d') }}</small>
+                                        </div>
+                                        <span class="badge bg-warning">Pending</span>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                {% if recent_absences %}
+                    <div class="alert alert-danger">
+                        <h6 class="mb-2"><i class="fas fa-calendar-times me-1"></i> Recent Absences</h6>
+                        <ul class="list-group">
+                            {% for absence in recent_absences %}
+                                <li class="list-group-item">
+                                    <small>{{ absence.session.course.title }}</small><br>
+                                    <small class="text-muted">{{ absence.session.session_date.strftime('%Y-%m-%d') }}</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Attendance Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <canvas id="attendanceChart" height="200"></canvas>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No attendance data available. You are not enrolled in any courses yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>College Calendar</h5>
+            </div>
+            <div class="card-body">
+                <button id="calendarButton" class="btn btn-primary mb-3">College Calendar</button>
+                <div id="calendarSection" style="display:none;">
+                    <h6>College Calendar 2024-2025</h6>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Event/Holiday</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>29.07.2024</td><td>Mon</td><td>Reopening for Senior Students</td></tr>
+                            <tr><td>29.07.2024</td><td>Mon</td><td>First Year M.E./M.Tech. Orientation</td></tr>
+                            <tr><td>15.08.2024</td><td>Thu</td><td>INDEPENDENCE DAY (H1)</td></tr>
+                            <tr><td>07.09.2024</td><td>Sat</td><td>GANESH CHATURTHI</td></tr>
+                            <tr><td>02.10.2024</td><td>Wed</td><td>GANDHI JAYANTHI (H2)</td></tr>
+                            <tr><td>11.10.2024</td><td>Fri</td><td>AYUTHA POOJA (H3)</td></tr>
+                            <tr><td>12.10.2024</td><td>Sat</td><td>Additional Holiday on Account of Vijayadashami</td></tr>
+                            <tr><td>19.10.2024</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>31.10.2024</td><td>Thu</td><td>DEEPAVALI (H4)</td></tr>
+                            <tr><td>01.11.2024</td><td>Fri</td><td>Additional Holiday on Account of Deepavali</td></tr>
+                            <tr><td>16.11.2024</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>25.12.2024</td><td>Wed</td><td>CHRISTMAS (H5)</td></tr>
+                            <tr><td>01.01.2025</td><td>Wed</td><td>NEW YEAR (H6)</td></tr>
+                            <tr><td>13.01.2025</td><td>Mon</td><td>Additional Holiday on Account of Pongal</td></tr>
+                            <tr><td>14.01.2025</td><td>Tue</td><td>PONGAL (H7)</td></tr>
+                            <tr><td>18.01.2025</td><td>Sat</td><td>Compensatory working day</td></tr>
+                            <tr><td>26.01.2025</td><td>Sun</td><td>REPUBLIC DAY</td></tr>
+                            <tr><td>31.03.2025</td><td>Mon</td><td>RAMZAN (H8)</td></tr>
+                            <tr><td>14.04.2025</td><td>Mon</td><td>TAMIL NEW YEAR (H9)</td></tr>
+                            <tr><td>16.04.2025</td><td>Wed</td><td>College Day</td></tr>
+                            <tr><td>01.05.2025</td><td>Thu</td><td>MAY DAY (H10)</td></tr>
+                            <tr><td>07.06.2025</td><td>Sat</td><td>BAKRID</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if courses %}
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            
+            // Data for chart
+            const courseLabels = [
+                {% for course in courses %}
+                    '{{ course.title }}',
+                {% endfor %}
+            ];
+            
+            const attendanceData = [
+                {% for course in courses %}
+                    {{ attendance_stats[course.id].percentage }},
+                {% endfor %}
+            ];
+            
+            const requiredThresholds = [
+                {% for course in courses %}
+                    {{ course.min_attendance_percent }},
+                {% endfor %}
+            ];
+            
+            // Define colors based on attendance
+            const backgroundColors = attendanceData.map((percentage, index) => {
+                if (percentage < 60) {
+                    return 'rgba(220, 53, 69, 0.7)'; // Danger
+                } else if (percentage < requiredThresholds[index]) {
+                    return 'rgba(255, 193, 7, 0.7)'; // Warning
+                } else {
+                    return 'rgba(40, 167, 69, 0.7)'; // Success
+                }
+            });
+            
+            const borderColors = attendanceData.map((percentage, index) => {
+                if (percentage < 60) {
+                    return 'rgba(220, 53, 69, 1)'; // Danger
+                } else if (percentage < requiredThresholds[index]) {
+                    return 'rgba(255, 193, 7, 1)'; // Warning
+                } else {
+                    return 'rgba(40, 167, 69, 1)'; // Success
+                }
+            });
+            
+            // Create chart
+            const attendanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: courseLabels,
+                    datasets: [
+                        {
+                            label: 'Your Attendance (%)',
+                            data: attendanceData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Required Threshold (%)',
+                            data: requiredThresholds,
+                            type: 'line',
+                            fill: false,
+                            borderColor: 'rgba(52, 58, 64, 0.8)',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Attendance Percentage (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const courseIndex = context.dataIndex;
+                                    const requiredAttendance = requiredThresholds[courseIndex];
+                                    const currentAttendance = attendanceData[courseIndex];
+                                    
+                                    if (currentAttendance < requiredAttendance) {
+                                        return `Required: ${requiredAttendance}% (${(requiredAttendance - currentAttendance).toFixed(1)}% below threshold)`;
+                                    } else {
+                                        return `Required: ${requiredAttendance}% (${(currentAttendance - requiredAttendance).toFixed(1)}% above threshold)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    });
+
+    // Calendar toggle functionality
+    document.getElementById('calendarButton').addEventListener('click', function() {
+        const calendarSection = document.getElementById('calendarSection');
+        if (calendarSection.style.display === 'none') {
+            calendarSection.style.display = 'block';
+        } else {
+            calendarSection.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

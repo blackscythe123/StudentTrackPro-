@@ -1,0 +1,271 @@
+/* 
+ * Attendance Management System Styles
+ * Custom styles beyond Bootstrap defaults
+ */
+
+/* Global utility classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.w-auto {
+    width: auto;
+}
+
+.min-vh-75 {
+    min-height: 75vh;
+}
+
+/* Header and navigation styling */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Dashboard stats and cards */
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Attendance status colors */
+.status-present {
+    background-color: rgba(40, 167, 69, 0.2);
+    border-left: 4px solid rgba(40, 167, 69, 1);
+}
+
+.status-absent {
+    background-color: rgba(220, 53, 69, 0.2);
+    border-left: 4px solid rgba(220, 53, 69, 1);
+}
+
+.status-late {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-left: 4px solid rgba(255, 193, 7, 1);
+}
+
+.status-excused {
+    background-color: rgba(23, 162, 184, 0.2);
+    border-left: 4px solid rgba(23, 162, 184, 1);
+}
+
+/* Attendance taking interface */
+.attendance-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.attendance-row:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.notes-highlighted {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Card hover effects */
+.hover-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Form validation styles */
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* Reports and charts */
+.chart-container {
+    position: relative;
+    margin: auto;
+    height: 300px;
+}
+
+.small-chart {
+    height: 150px;
+}
+
+/* Attendance status badges */
+.badge-present {
+    background-color: rgba(40, 167, 69, 1);
+    color: white;
+}
+
+.badge-absent {
+    background-color: rgba(220, 53, 69, 1);
+    color: white;
+}
+
+.badge-late {
+    background-color: rgba(255, 193, 7, 1);
+    color: black;
+}
+
+.badge-excused {
+    background-color: rgba(23, 162, 184, 1);
+    color: white;
+}
+
+/* Dashboard color indicators */
+.attendance-indicator {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+.indicator-high {
+    background-color: rgba(40, 167, 69, 1);
+}
+
+.indicator-medium {
+    background-color: rgba(255, 193, 7, 1);
+}
+
+.indicator-low {
+    background-color: rgba(220, 53, 69, 1);
+}
+
+/* Custom styles for course progress elements */
+.course-progress {
+    position: relative;
+    height: 100%;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.course-progress .progress-bar {
+    height: 100%;
+}
+
+.course-progress .progress-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 1.8rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}
+
+@media (max-width: 576px) {
+    .progress-text {
+        display: none; /* Hide progress text on small screens */
+    }
+    
+    .chart-container {
+        height: 200px;
+    }
+}
+/* Add to styles.css */
+.badge-present {
+    background-color: rgba(40, 167, 69, 1);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-present i {
+    margin-right: 0.25rem;
+}
+/* Calendar Section Styling */
+#calendarSection {
+    padding: 15px 0;
+}
+
+#calendarSection table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#calendarSection th,
+#calendarSection td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+#calendarSection th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+#calendarSection tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+#calendarSection tr:hover {
+    background-color: #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+/* Highlight holidays */
+#calendarSection td:contains('(H') {
+    font-weight: 500;
+    color: #dc3545; /* Red for holidays */
+}
+
+/* Custom pseudo-class for text containing '(H' (requires jQuery or JavaScript for full support) */
+#calendarSection td[data-holiday="true"] {
+    font-weight: 500;
+    color: #dc3545;
+}
+
+/* Calendar Button */
+#calendarButton {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+#calendarButton:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    color: white;
+}

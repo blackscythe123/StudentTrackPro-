@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Reports - Attendance Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        transition: transform 0.2s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+    }
+    #chartContainer {
+        min-height: 400px;
+    }
+    /* Change the white background of cards to light gray */
+    .card {
+        background-color: #f0f0f0; /* Light gray instead of white */
+    }
+    .card-body {
+        background-color: #f0f0f0; /* Ensure the body matches the card */
+    }
+    /* Optional: Adjust text color if needed for contrast */
+    .card-body, .card-title, .card-subtitle, .card-text {
+        color: #333; /* Darker text for readability on light gray */
+    }
+    /* Adjust bg-light cards (e.g., summary cards) */
+    .bg-light {
+        background-color: #e0e0e0 !important; /* Slightly darker gray for contrast */
+    }
+    /* Ensure the danger card (Below Threshold) retains its color */
+    .bg-danger {
+        background-color: #dc3545 !important; /* Keep red for Below Threshold */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Reports</h4>
+    </div>
+    <div class="card-body">
+        <p class="lead">Select a course to view detailed attendance reports and analytics.</p>
+        
+        <div class="row">
+            {% for course in courses %}
+                <div class="col-md-4 mb-3">
+                    <div class="card report-card h-100" data-course-id="{{ course.id }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ course.code }}</h6>
+                            <p class="card-text">
+                                <i class="fas fa-users me-1"></i> {{ course.students }} students<br>
+                                <i class="fas fa-calendar-alt me-1"></i> {{ course.sessions }} sessions
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary w-100 view-report-btn" data-course-id="{{ course.id }}">
+                                <i class="fas fa-chart-line me-1"></i> View Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You haven't created any courses yet.
+                    </div>
+                    <a href="{{ url_for('course_management') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create Course
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card d-none" id="reportContainer">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i><span id="reportTitle">Course Report</span></h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h2 id="totalStudents">0</h2>
+                        <p class="mb-0">Total Students</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h2 id="totalSessions">0</h2>
+                        <p class="mb-0">Total Sessions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h2 id="overallAttendance">0%</h2>
+                        <p class="mb-0">Overall Attendance</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h2 id="belowThreshold">0</h2>
+                        <p class="mb-0">Below Threshold</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">Overview</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false">Student Analysis</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab" aria-controls="sessions" aria-selected="false">Session Analysis</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="reportTabContent">
+            <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Overall Attendance Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="attendanceDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Attendance Status Breakdown</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="attendanceStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="students" role="tabpanel" aria-labelledby="students-tab">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Student Attendance Percentages</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="studentAttendanceChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Student Attendance Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="studentsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Present</th>
+                                        <th>Absent</th>
+                                        <th>Late</th>
+                                        <th>Excused</th>
+                                        <th>Attendance %</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="sessions" role="tabpanel" aria-labelledby="sessions-tab">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Attendance Rate by Session</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="sessionAttendanceChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Session Attendance Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="sessionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Session</th>
+                                        <th>Present</th>
+                                        <th>Absent</th>
+                                        <th>Late</th>
+                                        <th>Excused</th>
+                                        <th>Attendance Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reportContainer = document.getElementById('reportContainer');
+        const reportButtons = document.querySelectorAll('.view-report-btn');
+        
+        let attendanceDistributionChart = null;
+        let attendanceStatusChart = null;
+        let studentAttendanceChart = null;
+        let sessionAttendanceChart = null;
+        
+        reportButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const courseId = this.getAttribute('data-course-id');
+                loadCourseReport(courseId);
+            });
+        });
+        
+        function loadCourseReport(courseId) {
+            fetch(`/api/course_report/${courseId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayReport(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching report data:', error);
+                    alert('Error loading report. Please try again.');
+                });
+        }
+        
+        function displayReport(data) {
+            reportContainer.classList.remove('d-none');
+            
+            document.getElementById('reportTitle').textContent = `${data.course.code} - ${data.course.title} Report`;
+            document.getElementById('totalStudents').textContent = data.summary.total_students;
+            document.getElementById('totalSessions').textContent = data.summary.total_sessions;
+            document.getElementById('overallAttendance').textContent = `${data.summary.overall_attendance_rate.toFixed(1)}%`;
+            document.getElementById('belowThreshold').textContent = data.summary.students_below_threshold;
+            
+            reportContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            updateOverviewCharts(data);
+            updateStudentTable(data.students);
+            updateStudentChart(data.students);
+            updateSessionTable(data.sessions);
+            updateSessionChart(data.sessions);
+        }
+        
+        function updateOverviewCharts(data) {
+            let totalPresent = 0;
+            let totalAbsent = 0;
+            let totalLate = 0;
+            let totalExcused = 0;
+            
+            data.students.forEach(student => {
+                totalPresent += student.present;
+                totalAbsent += student.absent;
+                totalLate += student.late;
+                totalExcused += student.excused;
+            });
+            
+            const distributionCtx = document.getElementById('attendanceDistributionChart').getContext('2d');
+            if (attendanceDistributionChart) {
+                attendanceDistributionChart.destroy();
+            }
+            attendanceDistributionChart = new Chart(distributionCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Present', 'Late', 'Absent', 'Excused'],
+                    datasets: [{
+                        data: [totalPresent, totalLate, totalAbsent, totalExcused],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)',
+                            'rgba(23, 162, 184, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)',
+                            'rgba(23, 162, 184, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.raw;
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const statusCtx = document.getElementById('attendanceStatusChart').getContext('2d');
+            if (attendanceStatusChart) {
+                attendanceStatusChart.destroy();
+            }
+            const ranges = { '90-100%': 0, '75-89%': 0, '60-74%': 0, 'Below 60%': 0 };
+            data.students.forEach(student => {
+                if (student.percentage >= 90) ranges['90-100%']++;
+                else if (student.percentage >= 75) ranges['75-89%']++;
+                else if (student.percentage >= 60) ranges['60-74%']++;
+                else ranges['Below 60%']++;
+            });
+            attendanceStatusChart = new Chart(statusCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ranges),
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: Object.values(ranges),
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(23, 162, 184, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(23, 162, 184, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        function updateStudentTable(students) {
+            const tableBody = document.querySelector('#studentsTable tbody');
+            tableBody.innerHTML = '';
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                if (student.below_threshold) row.classList.add('table-danger');
+                row.innerHTML = `
+                    <td>${student.student_id}</td>
+                    <td>${student.name}</td>
+                    <td>${student.present}</td>
+                    <td>${student.absent}</td>
+                    <td>${student.late}</td>
+                    <td>${student.excused}</td>
+                    <td>${student.percentage.toFixed(1)}%</td>
+                    <td><span class="badge ${student.below_threshold ? 'bg-danger' : 'bg-success'}">${student.below_threshold ? 'Below Threshold' : 'Good Standing'}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function updateStudentChart(students) {
+            const ctx = document.getElementById('studentAttendanceChart').getContext('2d');
+            if (studentAttendanceChart) studentAttendanceChart.destroy();
+            students.sort((a, b) => a.percentage - b.percentage);
+            const labels = students.map(student => student.name);
+            const data = students.map(student => student.percentage);
+            const backgroundColors = students.map(student => student.below_threshold ? 'rgba(220, 53, 69, 0.7)' : 'rgba(40, 167, 69, 0.7)');
+            studentAttendanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Attendance Percentage',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: students.map(student => student.below_threshold ? 'rgba(220, 53, 69, 1)' : 'rgba(40, 167, 69, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: { x: { beginAtZero: true, max: 100, title: { display: true, text: 'Attendance Percentage (%)' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        function updateSessionTable(sessions) {
+            const tableBody = document.querySelector('#sessionsTable tbody');
+            tableBody.innerHTML = '';
+            sessions.forEach(session => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${session.date}</td>
+                    <td>${session.title}</td>
+                    <td>${session.present}</td>
+                    <td>${session.absent}</td>
+                    <td>${session.late}</td>
+                    <td>${session.excused}</td>
+                    <td>${session.attendance_rate.toFixed(1)}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function updateSessionChart(sessions) {
+            const ctx = document.getElementById('sessionAttendanceChart').getContext('2d');
+            if (sessionAttendanceChart) sessionAttendanceChart.destroy();
+            sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sessions.map(session => session.date);
+            const attendanceData = sessions.map(session => session.attendance_rate);
+            sessionAttendanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Attendance Rate (%)',
+                        data: attendanceData,
+                        backgroundColor: 'rgba(23, 162, 184, 0.2)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Attendance Rate (%)' } },
+                        x: { title: { display: true, text: 'Session Date' } }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

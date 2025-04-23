@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Details - {{ course.title }} - Attendance Management System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Course Attendance Details</h4>
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-light">
+            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>{{ course.title }} ({{ course.course_code }})</h5>
+                <p><strong>Instructor:</strong> {{ course.instructor.full_name }}</p>
+                <p><strong>Schedule:</strong> {{ course.schedule }}</p>
+                <p><strong>Location:</strong> {{ course.location }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 {% if stats.percentage < course.min_attendance_percent %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                    <div class="card-body">
+                        <h5 class="card-title">Your Attendance Summary</h5>
+                        <h2 class="display-4 mb-3">{{ stats.percentage }}%</h2>
+                        <div class="row">
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="text-center">
+                                    <h6>Present</h6>
+                                    <h4>{{ stats.present }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="text-center">
+                                    <h6>Late</h6>
+                                    <h4>{{ stats.late }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="text-center">
+                                    <h6>Absent</h6>
+                                    <h4>{{ stats.absent }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="text-center">
+                                    <h6>Excused</h6>
+                                    <h4>{{ stats.excused }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 15px;">
+                            <div class="progress-bar bg-light text-dark" 
+                                role="progressbar" 
+                                style="width: {{ stats.percentage }}%;" 
+                                aria-valuenow="{{ stats.percentage }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                                {{ stats.percentage }}%
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <small>Required: {{ course.min_attendance_percent }}% | 
+                            Total Sessions: {{ stats.total }}</small>
+                        </div>
+                        
+                        {% if stats.percentage < course.min_attendance_percent %}
+                            <div class="alert alert-light mt-3 mb-0">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Your attendance is below the required threshold of {{ course.min_attendance_percent }}%.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-calendar-alt me-2"></i>Attendance Record</h5>
+                    <a href="{{ url_for('create_absence_request') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-calendar-plus me-1"></i> Request Absence
+                    </a>
+                </div>
+                <hr>
+                
+                {% if attendance_records %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session, attendance in attendance_records %}
+                                    <tr class="{% if attendance and attendance.status == 'absent' %}table-danger{% elif attendance and attendance.status == 'late' %}table-warning{% elif attendance and attendance.status == 'excused' %}table-info{% elif attendance and attendance.status == 'present' %}table-success{% endif %}">
+                                        <td>{{ session.session_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }}</td>
+                                        <td>
+                                            {% if attendance %}
+                                                {% if attendance.status == 'present' %}
+                                                    <span class="badge bg-success">Present</span>
+                                                {% elif attendance.status == 'absent' %}
+                                                    <span class="badge bg-danger">Absent</span>
+                                                {% elif attendance.status == 'late' %}
+                                                    <span class="badge bg-warning text-dark">Late</span>
+                                                {% elif attendance.status == 'excused' %}
+                                                    <span class="badge bg-info">Excused</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Recorded</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance and attendance.notes %}
+                                                {{ attendance.notes }}
+                                            {% else %}
+                                                <span class="text-muted">No notes</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No attendance records found for this course.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Attendance Visualization</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <canvas id="attendanceDistribution"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <canvas id="attendanceTrend"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendance Distribution Chart
+        const distributionCtx = document.getElementById('attendanceDistribution').getContext('2d');
+        new Chart(distributionCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Present', 'Late', 'Absent', 'Excused'],
+                datasets: [{
+                    data: [{{ stats.present }}, {{ stats.late }}, {{ stats.absent }}, {{ stats.excused }}],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.7)',  // Present - green
+                        'rgba(255, 193, 7, 0.7)',  // Late - yellow
+                        'rgba(220, 53, 69, 0.7)',  // Absent - red
+                        'rgba(23, 162, 184, 0.7)'  // Excused - cyan
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(23, 162, 184, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Attendance Distribution'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Attendance Trend Chart
+        const trendCtx = document.getElementById('attendanceTrend').getContext('2d');
+        
+        // Prepare data for trend chart
+        const sessions = [];
+        const statuses = [];
+        
+        {% for session, attendance in attendance_records %}
+            sessions.push('{{ session.session_date.strftime("%m/%d") }}');
+            
+            {% if attendance %}
+                {% if attendance.status == 'present' %}
+                    statuses.push(1); // Present
+                {% elif attendance.status == 'late' %}
+                    statuses.push(0.5); // Late
+                {% elif attendance.status == 'excused' %}
+                    statuses.push(0.75); // Excused
+                {% else %}
+                    statuses.push(0); // Absent
+                {% endif %}
+            {% else %}
+                statuses.push(null); // Not recorded
+            {% endif %}
+        {% endfor %}
+        
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: sessions,
+                datasets: [{
+                    label: 'Attendance Status',
+                    data: statuses,
+                    backgroundColor: 'rgba(23, 162, 184, 0.2)',
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointBackgroundColor: function(context) {
+                        const value = context.dataset.data[context.dataIndex];
+                        if (value === 1) return 'rgba(40, 167, 69, 1)'; // Present
+                        if (value === 0.5) return 'rgba(255, 193, 7, 1)'; // Late
+                        if (value === 0.75) return 'rgba(23, 162, 184, 1)'; // Excused
+                        if (value === 0) return 'rgba(220, 53, 69, 1)'; // Absent
+                        return 'rgba(108, 117, 125, 1)'; // Not recorded
+                    },
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        ticks: {
+                            callback: function(value) {
+                                if (value === 0) return 'Absent';
+                                if (value === 0.5) return 'Late';
+                                if (value === 0.75) return 'Excused';
+                                if (value === 1) return 'Present';
+                                return '';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Session Date'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Attendance Trend'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                if (value === 1) return 'Present';
+                                if (value === 0.5) return 'Late';
+                                if (value === 0.75) return 'Excused';
+                                if (value === 0) return 'Absent';
+                                return 'Not Recorded';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

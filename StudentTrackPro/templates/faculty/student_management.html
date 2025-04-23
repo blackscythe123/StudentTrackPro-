@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Student Management - {{ course.title }} - Attendance Management System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-users me-2"></i>Student Management</h4>
+        <a href="{{ url_for('course_management') }}" class="btn btn-sm btn-light">
+            <i class="fas fa-arrow-left me-1"></i> Back to Courses
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>{{ course.title }} ({{ course.course_code }})</h5>
+                <p><strong>Schedule:</strong> {{ course.schedule }}</p>
+                <p><strong>Location:</strong> {{ course.location }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                    <i class="fas fa-user-plus me-1"></i> Enroll Student
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Enrolled Students</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if enrollments %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Department</th>
+                                            <th>Year</th>
+                                            <th>Enrollment Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for enrollment in enrollments %}
+                                            <tr>
+                                                <td>{{ enrollment.student.student_id }}</td>
+                                                <td>{{ enrollment.student.full_name }}</td>
+                                                <td>{{ enrollment.student.department }}</td>
+                                                <td>{{ enrollment.student.year_of_study }}</td>
+                                                <td>{{ enrollment.enrollment_date.strftime('%Y-%m-%d') }}</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-danger"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#removeStudentModal{{ enrollment.id }}">
+                                                        <i class="fas fa-user-minus"></i>
+                                                    </button>
+                                                    
+                                                    <!-- Remove Student Modal -->
+                                                    <div class="modal fade" id="removeStudentModal{{ enrollment.id }}" tabindex="-1" 
+                                                         aria-labelledby="removeStudentModalLabel{{ enrollment.id }}" aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="removeStudentModalLabel{{ enrollment.id }}">
+                                                                        Confirm Removal
+                                                                    </h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <p>Are you sure you want to remove <strong>{{ enrollment.student.full_name }}</strong> from this course?</p>
+                                                                    <p class="text-danger">This will also delete all attendance records for this student in this course.</p>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                    <form action="{{ url_for('remove_enrollment', enrollment_id=enrollment.id) }}" method="POST">
+                                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                        <button type="submit" class="btn btn-danger">Remove Student</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> No students are enrolled in this course yet.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Student Modal -->
+<div class="modal fade" id="enrollStudentModal" tabindex="-1" aria-labelledby="enrollStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enrollStudentModalLabel">Enroll Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if available_students %}
+                    <form id="enrollStudentForm" action="{{ url_for('enroll_student') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="course_id" value="{{ course.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Select Student</label>
+                            <select class="form-select" id="student_id" name="student_id" required>
+                                <option value="" selected disabled>Choose a student...</option>
+                                {% for student in available_students %}
+                                    <option value="{{ student.id }}">
+                                        {{ student.student_id }} - {{ student.full_name }} ({{ student.department }}, Year {{ student.year_of_study }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Enroll Student</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> All available students are already enrolled in this course.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

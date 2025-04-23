@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Take Attendance - {{ course.title }} - Attendance Management System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Take Attendance</h4>
+        <a href="{{ url_for('course_sessions', course_id=course.id) }}" class="btn btn-sm btn-light">
+            <i class="fas fa-arrow-left me-1"></i> Back to Sessions
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>{{ course.title }} ({{ course.course_code }})</h5>
+                <p><strong>Date:</strong> {{ session.session_date.strftime('%B %d, %Y') }}</p>
+                <p><strong>Time:</strong> {{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }}</p>
+                <p><strong>Location:</strong> {{ course.location }}</p>
+                {% if session.title %}
+                    <p><strong>Session:</strong> {{ session.title }}</p>
+                {% endif %}
+                {% if session.notes %}
+                    <p><strong>Notes:</strong> {{ session.notes }}</p>
+                {% endif %}
+                <div id="attendanceBadge" class="mt-3"></div> <!-- Gamification badge will appear here -->
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('take_attendance', session_id=session.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr>
+                                <td>{{ student.student_id }}</td>
+                                <td>{{ student.full_name }}</td>
+                                <td>
+                                    <select name="status_{{ student.id }}" class="form-select attendance-status-select" 
+                                            data-student-id="{{ student.id }}">
+                                        <option value="present" 
+                                            {% if student.id in existing_records and existing_records[student.id].status == 'present' %}selected{% endif %}>
+                                            Present
+                                        </option>
+                                        <option value="absent" 
+                                            {% if student.id in existing_records and existing_records[student.id].status == 'absent' %}selected{% endif %}>
+                                            Absent
+                                        </option>
+                                        <option value="late" 
+                                            {% if student.id in existing_records and existing_records[student.id].status == 'late' %}selected{% endif %}>
+                                            Late
+                                        </option>
+                                        <option value="excused" 
+                                            {% if student.id in existing_records and existing_records[student.id].status == 'excused' %}selected{% endif %}>
+                                            Excused
+                                        </option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="notes_{{ student.id }}" 
+                                           placeholder="Optional notes"
+                                           value="{% if student.id in existing_records %}{{ existing_records[student.id].notes }}{% endif %}">
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Save Attendance
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+{% endblock %}
